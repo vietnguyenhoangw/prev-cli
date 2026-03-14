@@ -13,7 +13,7 @@ interface LayoutProps {
 }
 
 export function Layout({ tree, children }: LayoutProps) {
-  const [tocOpen, setTocOpen] = useState(false)
+  const [tocOpen, setTocOpen] = useState(true)
 
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -39,7 +39,7 @@ export function Layout({ tree, children }: LayoutProps) {
   const handleTocToggle = () => setTocOpen(!tocOpen)
 
   return (
-    <div className="prev-layout-floating">
+    <div className={`prev-layout-floating ${tocOpen ? 'sidebar-open' : ''}`}>
       <IconSprite />
       <Toolbar
         tree={tree}
@@ -50,12 +50,11 @@ export function Layout({ tree, children }: LayoutProps) {
         onTocToggle={handleTocToggle}
         tocOpen={tocOpen}
       />
-      {tocOpen && (
-        <TOCPanel
-          tree={tree}
-          onClose={() => setTocOpen(false)}
-        />
-      )}
+      <TOCPanel
+        tree={tree}
+        isOpen={tocOpen}
+        onClose={() => setTocOpen(false)}
+      />
       <main className="prev-main-floating">
         {children}
       </main>

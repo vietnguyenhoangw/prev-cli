@@ -5,6 +5,7 @@ import { Icon } from './icons'
 
 interface TOCPanelProps {
   tree: PageTree.Root
+  isOpen: boolean
   onClose: () => void
 }
 
@@ -14,7 +15,7 @@ function getItemId(item: TreeItem): string {
   return item.type === 'folder' ? `folder:${item.name}` : item.url
 }
 
-export function TOCPanel({ tree, onClose }: TOCPanelProps) {
+export function TOCPanel({ tree, isOpen, onClose }: TOCPanelProps) {
   const location = useLocation()
   const panelRef = useRef<HTMLDivElement>(null)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false)
@@ -28,7 +29,10 @@ export function TOCPanel({ tree, onClose }: TOCPanelProps) {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  // On mobile, handle escape key and click outside to close
   useEffect(() => {
+    if (!isMobile || !isOpen) return
+
     const handleClickOutside = (e: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
         onClose()
@@ -43,7 +47,7 @@ export function TOCPanel({ tree, onClose }: TOCPanelProps) {
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleEscape)
     }
-  }, [onClose])
+  }, [isMobile, isOpen, onClose])
 
   const handleDragStart = (index: number) => {
     setDragIndex(index)
@@ -77,7 +81,10 @@ export function TOCPanel({ tree, onClose }: TOCPanelProps) {
     setDragOverIndex(null)
   }
 
+  // Mobile: show as overlay/bottom sheet
   if (isMobile) {
+    if (!isOpen) return null
+
     return (
       <div className="toc-overlay">
         <div className="toc-overlay-content" ref={panelRef}>
@@ -100,11 +107,14 @@ export function TOCPanel({ tree, onClose }: TOCPanelProps) {
     )
   }
 
+  // Desktop: show as sidebar
   return (
-    <div className="toc-dropdown" ref={panelRef}>
-      <div className="toc-dropdown-header">
+    <aside className={`toc-sidebar ${isOpen ? 'open' : ''}`} ref={panelRef}>
+      <div className="toc-sidebar-header">
         <span>Navigation</span>
-        <button className="toc-close-btn" onClick={onClose}><Icon name="x" size={16} /></button>
+        <button className="toc-close-btn" onClick={onClose} title="Close sidebar">
+          <Icon name="chevron-left" size={16} />
+        </button>
       </div>
       <nav className="toc-nav">
         {orderedItems.map((item, i) => (
@@ -119,12 +129,12 @@ export function TOCPanel({ tree, onClose }: TOCPanelProps) {
             <TOCItem
               item={item}
               location={location}
-              onNavigate={onClose}
+              onNavigate={() => {}}
             />
           </div>
         ))}
       </nav>
-    </div>
+    </aside>
   )
 }
 
