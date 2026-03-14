@@ -130,14 +130,46 @@ export function fileToRoute(file: string): string {
 
 export interface ScanOptions {
   include?: string[]
+  exclude?: string[]
   hidden?: string[]
 }
 
 export async function scanPages(rootDir: string, options: ScanOptions = {}): Promise<Page[]> {
-  const { include = [] } = options
+  const { include = [], exclude = [] } = options
 
-  // Normalize include paths to have leading dot
-  const includeDirs = include.map(dir => dir.startsWith('.') ? dir : `.${dir}`)
+  // Separate dot-prefixed includes from regular path includes
+  const dotIncludes = include.filter(dir => dir.startsWith('.') && !dir.includes('/'))
+  const pathIncludes = include.filter(dir => !dir.startsWith('.') || dir.includes('/'))
+
+  // Normalize dot includes to have leading dot
+  const includeDirs = dotIncludes.map(dir => dir.startsWith('.') ? dir : `.${dir}`)
+
+  // Normalize path includes for matching
+  const normalizedPathIncludes = pathIncludes.map(dir =>
+    dir.endsWith('/') ? dir.slice(0, -1) : dir
+  )
+
+  // Convert exclude to glob patterns
+  // Don't add exclude patterns for directories that have path includes as subdirectories
+  // (we'll handle those in post-filtering to allow the included subdirectories)
+  const excludeDirsWithSubIncludes = new Set<string>()
+  const excludePatterns = exclude.flatMap(dir => {
+    // If already a glob pattern, use as-is
+    if (dir.includes('*')) return [dir]
+
+    const normalized = dir.endsWith('/') ? dir.slice(0, -1) : dir
+
+    // Check if any pathInclude is a subdirectory of this exclude
+    const hasSubInclude = normalizedPathIncludes.some(inc => inc.startsWith(`${normalized}/`))
+
+    if (hasSubInclude) {
+      // Don't add to ignore list - we'll filter in post-processing
+      excludeDirsWithSubIncludes.add(normalized)
+      return []
+    }
+
+    return [`${normalized}/**`]
+  })
 
   // Build glob patterns
   const patterns = ['**/*.{md,mdx}']
@@ -145,6 +177,12 @@ export async function scanPages(rootDir: string, options: ScanOptions = {}): Pro
   // Add explicit patterns for included dot directories
   for (const dir of includeDirs) {
     patterns.push(`${dir}/**/*.{md,mdx}`)
+  }
+
+  // Add explicit patterns for path includes (like blue-whale/.c3)
+  for (const dir of pathIncludes) {
+    const normalized = dir.endsWith('/') ? dir.slice(0, -1) : dir
+    patterns.push(`${normalized}/**/*.{md,mdx}`)
   }
 
   // Build ignore patterns - always ignore these, plus dot dirs not in include list
@@ -180,6 +218,8 @@ export async function scanPages(rootDir: string, options: ScanOptions = {}): Pro
     'CONTRIBUTING.md',
     'LICENSE.md',
     'SECURITY.md',
+    // User-defined exclude patterns
+    ...excludePatterns,
   ]
 
   const files = await fg.glob(patterns, {
@@ -188,14 +228,29 @@ export async function scanPages(rootDir: string, options: ScanOptions = {}): Pro
     dot: true  // Enable dot to allow our explicit dot patterns
   })
 
-  // Filter out unwanted dot directories (not in include list)
+  // Filter out unwanted files
   const filteredFiles = files.filter(file => {
+    // Check if file is in an excluded directory that has sub-includes
+    for (const excludeDir of excludeDirsWithSubIncludes) {
+      if (file.startsWith(`${excludeDir}/`)) {
+        // File is in an excluded directory - only allow if in a path include
+        const isInPathInclude = normalizedPathIncludes.some(inc =>
+          file.startsWith(`${inc}/`) || file === `${inc}.md` || file === `${inc}.mdx`
+        )
+        if (!isInPathInclude) {
+          return false
+        }
+      }
+    }
+
     // Check if file is in a dot directory
     const parts = file.split('/')
     for (const part of parts) {
       if (part.startsWith('.') && part !== '.') {
-        // This is a dot directory - only allow if in include list
-        return includeDirs.some(dir => file.startsWith(dir.slice(1)) || file.startsWith(dir))
+        // This is a dot directory - allow if in include list OR in path includes
+        const inDotIncludes = includeDirs.some(dir => file.startsWith(dir.slice(1)) || file.startsWith(dir))
+        const inPathIncludes = normalizedPathIncludes.some(inc => file.startsWith(`${inc}/`) || file.startsWith(inc))
+        return inDotIncludes || inPathIncludes
       }
     }
     return true
