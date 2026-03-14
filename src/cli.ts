@@ -8,7 +8,7 @@ import { validate, formatValidationResult } from './validators'
 import { typecheck, formatTypecheckResult } from './typecheck'
 import { migrateConfigs, formatMigrationResult } from './migrate'
 import { cleanCache, getCacheDir } from './utils/cache'
-import { loadConfig, saveConfig, findConfigFile, defaultConfig } from './config'
+import { loadConfig, saveConfig, findConfigFile, findEffectiveRootDir, defaultConfig } from './config'
 import yaml from 'js-yaml'
 
 // Get version from package.json
@@ -47,7 +47,12 @@ const command = positionals[0] || 'dev'
 // For 'config' command, positionals[1] is the subcommand, not the directory
 // For 'create' command, positionals[1] is the preview name, not the directory
 // Always resolve to absolute path to ensure proper cache isolation
-const rootDir = path.resolve(values.cwd || (command === 'config' || command === 'create' ? '.' : positionals[1]) || '.')
+const initialRootDir = path.resolve(values.cwd || (command === 'config' || command === 'create' ? '.' : positionals[1]) || '.')
+// For dev/build/preview, use the directory where .prev.yaml is found (if any)
+// This allows running `prev` from subdirectories and using the parent config
+const rootDir = (command === 'dev' || command === 'build' || command === 'preview')
+  ? findEffectiveRootDir(initialRootDir)
+  : initialRootDir
 
 function printHelp() {
   console.log(`
@@ -96,6 +101,9 @@ Configuration (.prev.yaml):
     port: 3000             # Dev server port (overridden by -p flag)
     include:               # Include dot-prefixed directories
       - ".c3"
+    exclude:               # Exclude directories from scanning
+      - "backend"
+      - "frontend"
     hidden:                # Glob patterns for pages to hide
       - "internal/**"
       - "wip-*.md"
@@ -250,6 +258,12 @@ port: ${randomPort}
 include: []
   # - ".c3"
   # - ".github"
+
+# Exclude directories from scanning (useful for monorepos)
+exclude: []
+  # - "backend"
+  # - "frontend"
+  # - "apps"
 
 # Hidden pages (glob patterns)
 hidden: []

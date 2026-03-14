@@ -17,13 +17,14 @@ export interface VirtualModulesOptions {
 export function virtualModulesPlugin(options: VirtualModulesOptions): BunPlugin {
   const { rootDir, include } = options
   const config = options.config || loadConfig(rootDir)
+  const exclude = config.exclude || []
 
   // Cache
   let cachedPages: Awaited<ReturnType<typeof scanPages>> | null = null
 
   async function getPages() {
     if (!cachedPages) {
-      cachedPages = await scanPages(rootDir, { include })
+      cachedPages = await scanPages(rootDir, { include, exclude })
     }
     return cachedPages
   }

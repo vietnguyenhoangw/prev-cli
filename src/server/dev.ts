@@ -54,33 +54,43 @@ async function buildThemeApp(rootDir: string, include?: string[], config?: PrevC
     aliasesPlugin({ cliRoot }),
   ]
 
-  const result = await Bun.build({
-    entrypoints: [entryPath],
-    // No outdir = in-memory build
-    format: 'esm',
-    target: 'browser',
-    plugins,
-    jsx: { runtime: 'automatic', importSource: 'react' },
-    define: {
-      'import.meta.env.DEV': 'true',
-      'import.meta.env.BASE_URL': '"/"',
-      'process.env.NODE_ENV': '"development"',
-    },
-  })
+  try {
+    const result = await Bun.build({
+      entrypoints: [entryPath],
+      // No outdir = in-memory build
+      format: 'esm',
+      target: 'browser',
+      plugins,
+      jsx: { runtime: 'automatic', importSource: 'react' },
+      define: {
+        'import.meta.env.DEV': 'true',
+        'import.meta.env.BASE_URL': '"/"',
+        'process.env.NODE_ENV': '"development"',
+      },
+    })
 
-  if (!result.success) {
-    const errors = result.logs.filter(l => l.level === 'error').map(l => l.message)
-    return { js: '', css: '', success: false, errors }
-  }
+    if (!result.success) {
+      // Output all logs for debugging, not just error level
+      const allLogs = result.logs.map(l => `[${l.level}] ${l.message}`)
+      const errors = result.logs.filter(l => l.level === 'error').map(l => l.message)
+      if (allLogs.length > 0) {
+        console.error('  Build logs:', allLogs.join('\n  '))
+      }
+      return { js: '', css: '', success: false, errors: errors.length > 0 ? errors : ['Bundle failed (no specific error message)'] }
+    }
 
-  const jsOutput = result.outputs.find(o => o.path.endsWith('.js'))
-  const cssOutput = result.outputs.find(o => o.path.endsWith('.css'))
+    const jsOutput = result.outputs.find(o => o.path.endsWith('.js'))
+    const cssOutput = result.outputs.find(o => o.path.endsWith('.css'))
 
-  return {
-    js: jsOutput ? await jsOutput.text() : '',
-    css: cssOutput ? await cssOutput.text() : '',
-    success: true,
-    errors: [] as string[],
+    return {
+      js: jsOutput ? await jsOutput.text() : '',
+      css: cssOutput ? await cssOutput.text() : '',
+      success: true,
+      errors: [] as string[],
+    }
+  } catch (err) {
+    console.error('  Build exception:', err)
+    return { js: '', css: '', success: false, errors: [String(err)] }
   }
 }
 
@@ -117,7 +127,9 @@ export async function startDevServer(options: DevServerOptions) {
   console.log('  Building theme...')
   let appBundle = await buildThemeApp(rootDir, include, config)
   if (!appBundle.success) {
-    console.error('  Build errors:', appBundle.errors.join('\n'))
+    const errorMsg = appBundle.errors.join('\n')
+    console.error('  Build errors:', errorMsg)
+    throw new Error(`Bundle failed:\n${errorMsg}`)
   } else {
     console.log('  ✓ Theme built')
   }
