@@ -130,13 +130,32 @@ export function IconSprite() {
       <symbol id="icon-message-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
       </symbol>
+
+      {/* Sidebar Open (panel left open) */}
+      <symbol id="icon-sidebar-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M9 3v18" />
+        <path d="M14 9l3 3-3 3" />
+      </symbol>
+
+      {/* Sidebar Close (panel left close) */}
+      <symbol id="icon-sidebar-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M9 3v18" />
+        <path d="M17 9l-3 3 3 3" />
+      </symbol>
+
+      {/* Chevron Left */}
+      <symbol id="icon-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M15 18l-6-6 6-6" />
+      </symbol>
     </svg>
   )
 }
 
 // Icon component that references symbols from the sprite
 interface IconProps {
-  name: 'menu' | 'grid' | 'sun' | 'moon' | 'maximize' | 'minimize' | 'x' | 'chevron-right' | 'file' | 'folder' | 'mobile' | 'tablet' | 'desktop' | 'sliders' | 'loader' | 'arrow-left' | 'pin' | 'camera' | 'check-circle' | 'palette' | 'map' | 'message-circle'
+  name: 'menu' | 'grid' | 'sun' | 'moon' | 'maximize' | 'minimize' | 'x' | 'chevron-right' | 'chevron-left' | 'file' | 'folder' | 'mobile' | 'tablet' | 'desktop' | 'sliders' | 'loader' | 'arrow-left' | 'pin' | 'camera' | 'check-circle' | 'palette' | 'map' | 'message-circle' | 'sidebar-open' | 'sidebar-close'
   size?: number
   className?: string
   style?: React.CSSProperties

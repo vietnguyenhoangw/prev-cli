@@ -3,6 +3,7 @@ export interface PrevConfig {
   contentWidth: 'constrained' | 'full'
   hidden: string[]
   include: string[]
+  exclude: string[]
   order: Record<string, string[]>
   port?: number
 }
@@ -12,6 +13,7 @@ export const defaultConfig: PrevConfig = {
   contentWidth: 'constrained',
   hidden: [],
   include: [],
+  exclude: [],
   order: {},
   port: undefined
 }
@@ -36,6 +38,10 @@ export function validateConfig(raw: unknown): PrevConfig {
 
     if (Array.isArray(obj.include)) {
       config.include = obj.include.filter((i): i is string => typeof i === 'string')
+    }
+
+    if (Array.isArray(obj.exclude)) {
+      config.exclude = obj.exclude.filter((e): e is string => typeof e === 'string')
     }
 
     if (obj.order && typeof obj.order === 'object') {

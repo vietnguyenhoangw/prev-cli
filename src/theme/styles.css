@@ -586,6 +586,14 @@ body {
 .prev-main-floating {
   padding: 2rem;
   max-width: 100%;
+  transition: margin-left 0.25s ease;
+}
+
+/* Desktop: shift content when sidebar is open */
+@media (min-width: 769px) {
+  .prev-layout-floating.sidebar-open .prev-main-floating {
+    margin-left: 280px;
+  }
 }
 
 /* Mobile: add bottom padding for floating toolbar */

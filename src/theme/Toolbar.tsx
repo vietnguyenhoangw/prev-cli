@@ -71,9 +71,9 @@ export function Toolbar({ tree, onThemeToggle, onWidthToggle, isDark, isFullWidt
       <button
         className={`toolbar-btn ${tocOpen ? 'active' : ''}`}
         onClick={onTocToggle}
-        title="Table of Contents"
+        title={tocOpen ? 'Hide sidebar' : 'Show sidebar'}
       >
-        <Icon name="menu" size={18} />
+        <Icon name={tocOpen ? 'sidebar-close' : 'sidebar-open'} size={18} />
       </button>
 
       {previewUnits && previewUnits.length > 0 && (
